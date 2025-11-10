@@ -8,13 +8,21 @@ playerMoveDirection: var#1
 posBox: var#1
 prevposBox: var#1
 
-stagetopology: var#1
-CurentStage:  var#1
-CurentTopology: var#1
+cstagetopology: var#1
+curentStage:  var#1
+curentTopology: var#1
 
+currentUILayer: string " "
+currentPropLayer: string " "
+currentBackgroundLayer: string " "
+
+uiLayerColor: var#1
+propLayerColor: var#1
+backgroundLayerColor: var#1
+currentPrintingColor: var#1
 
 Level1Props: string`Aaaaaaaaaaa` ; not used yet, just a syntax test
-Level1Schenery : string "   b                                             b                                   b    b                                                        b                        b                                                       b                        b                   b                                              b                                                                 b                                          b                                  b                                        b                                    b                       b                                                   b                               b                                                "
+Level1Background : string "   B                                             b                                   b    b                                                        b                        b                                                       b                        b                   b                                              b                                                                 b                                          b                                  b                                        b                                    b                       b                                                   b                               b                                                "
 
 main:
 
@@ -401,14 +409,6 @@ render:
 
 
 	;render stage
-	
-	loadn r0, #0    			  ; printing position
-	loadn r1, #Level1Schenery	 ; String Address
-	loadn r2, #30		 	 ; color
-	
-	call ImprimeStr
-
-
 
 	;render props
 
@@ -421,9 +421,6 @@ render:
 	outchar r1, r0
 	
 	renderCleanBoxSkip:
-
-
-
 
 	;Render Player
 
@@ -491,13 +488,88 @@ ImprimeStr:
 
 
 AccesStringIndex:
-	push r0	; String Addres / first character
-	push r1	; Index of interest
+	; too small for actual use, can just be copied and pasted
+	; r0 String Addres / first character
+	; r1 Index of interest
 
 	add r0, r0, r1 ; addres of character in index r1	
-	
 	loadi r2, r0  ;returns on r2 can become a memory variable if needed
-;				  
-;	pop r1
-;	pop r0
-;	rts
+				  
+	rts
+
+ScreenRenderIndex:
+	
+	push r0
+	push r2
+	push r3
+	push r4
+	; Takes r1 as the position to render
+	; Takes currentPrintingColor as a color variable
+
+	; if there is a character on the top layer, it will print it,
+	; otherwise, it will check the background layer and print it, even if empty
+
+	; functionality can be expanded to add a UI layer, on top of the prop layer
+
+	;currentUiLayer
+	;currentPropLayer
+	;currentBackgroundLayer
+
+	loadn r0, #currentPropLayer
+	; r1 = Index
+	; call AccesStringIndex
+
+		add r0, r0, r1 ; addres of character in index r1	
+		loadi r2, r0  ;returns on r2 the value in the string
+
+	; if r2, the value of the string in index r1, is not = " ":
+	loadn r3, " "
+	cmp r2, r3
+	jeq printsecondlayer
+
+		;; Checks if color was passed, if zero, gets default color for layer
+		load r3, currentPrintingColor
+		add r4, r3, r3
+		jnz skipDefaultColorProps
+		load r3, propLayerColor
+		skipDefaultColorProps:
+
+		add r4, r2, r3
+		outchar r4, r1
+	
+		jmp endprintindex
+	; else:
+	printsecondlayer:
+
+	loadn r0, #currentBackgroundLayer
+	; r1 = Index
+	; call AccesStringIndex
+
+		add r0, r0, r1 ; addres of character in index r1	
+		loadi r2, r0  ;returns on r2 the value in the string
+
+	; if r2, the value of the string in index r1, is not = " ":
+	loadn r3, " "
+	cmp r2, r3
+	jeq printblank
+	
+	;; Checks if color was passed, if zero, gets default color for layer
+		load r3, currentPrintingColor
+		add r4, r3, r3
+		jnz skipDefaultColorBackground
+		load r3, backgroundLayerColor
+		skipDefaultColorBackground:
+	
+		add r4, r2, r3
+		outchar r4, r1
+	
+		jmp endprintindex
+	
+	printblank:
+	outchar r3, r1
+	endprintindex:
+	
+	pop r4
+	pop r2
+	pop r0
+	rts
