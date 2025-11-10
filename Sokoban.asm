@@ -9,11 +9,12 @@ posBox: var#1
 prevposBox: var#1
 
 stagetopology: var#1
-CurentStage:  
-CurentTopology:
+CurentStage:  var#1
+CurentTopology: var#1
 
 
-lineone: string`Aaaaaaaaaaa` ; not used yet, just a syntax test
+Level1Props: string`Aaaaaaaaaaa` ; not used yet, just a syntax test
+Level1Schenery : string "   b                                             b                                   b    b                                                        b                        b                                                       b                        b                   b                                              b                                                                 b                                          b                                  b                                        b                                    b                       b                                                   b                               b                                                "
 
 main:
 
@@ -392,10 +393,20 @@ render:
 	push r1
 	push r2
 
+
+
+
+	; Todo: Completely change this function, create a top layer map, and than a bootom layer one. Draw once at start, and just update the screen as needed.
+
+
+
 	;render stage
-
-
-
+	
+	loadn r0, #0    			  ; printing position
+	loadn r1, #Level1Schenery	 ; String Address
+	loadn r2, #30		 	 ; color
+	
+	call ImprimeStr
 
 
 
@@ -450,9 +461,9 @@ render:
 
 
 ImprimeStr:
-	push r0
-	push r1
-	push r2
+	push r0     ; printing position
+	push r1	 ; String Address
+	push r2	 ; color
 	push r3
 	push r4
 	
@@ -477,3 +488,16 @@ ImprimeStr:
 	pop r1
 	pop r0
 	rts
+
+
+AccesStringIndex:
+	push r0	; String Addres / first character
+	push r1	; Index of interest
+
+	add r0, r0, r1 ; addres of character in index r1	
+	
+	loadi r2, r0  ;returns on r2 can become a memory variable if needed
+;				  
+;	pop r1
+;	pop r0
+;	rts
