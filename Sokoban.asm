@@ -1,29 +1,47 @@
 jmp main
 
+
 posPlayer: var#1
 prevposPlayer: var#1
 originalposPlayer: var#1
 playerMoveDirection: var#1
 playerOrientation: var#1
 
+
 posBox: var#1
 prevposBox: var#1
+
 
 cstagetopology: var#1
 curentStage:  var#1
 curentTopology: var#1
 
+
 currentUILayer: string " "
 currentPropLayer: string " "
 currentBackgroundLayer: string " "
+
+
+currentScreenIndexesChanged : string "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "
+loadn r0, "\0"
+loadn r1, #currentScreenIndexesChanged
+loadi r1, r0
+; Makes first character the end string
+currentScreenIndexesChangedIndex: var#0
+; mustalways pont to /0
+
+; This actes like a stack, but not realy
+
 
 uiLayerColor: var#1
 propLayerColor: var#1
 backgroundLayerColor: var#1
 currentPrintingColor: var#1
 
-Level1Props: string`Aaaaaaaaaaa` ; not used yet, just a syntax test
-Level1Background : string "   B                                             b                                   b    b                                                        b                        b                                                       b                        b                   b                                              b                                                                 b                                          b                                  b                                        b                                    b                       b                                                   b                               b                                                "
+
+Level1Props : string "                                                                                                                                                                                                                                                                                                                                                                                       @@@@@@@                                 @     @                                 @     @                                 @  A  @                                 @     @                                 @     @                                 @@@@@@@                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  "
+Level1Background : string "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "
+
 
 main:
 
@@ -33,14 +51,24 @@ main:
 
 	loadn r0, #156
 	store posBox, r0
+	
+
+	loadn r0, #0
+	loadn r1, #Level1Props
+	loadn r2, #0
+	
+	call ImprimeStr
+
+
 
 	mainLoop:
 	
 	;Movement
 	call movePlayer
 
+
 	call checkPushMovement
-	
+
 	;RenderLoop:
 	call render
 
@@ -287,8 +315,8 @@ mvTopology:
 
 		;refactor code to make it elagent and good, this is trash	
 		
-		
-		push r1
+		; r0 = curent position
+		push r1 ; previous position
 		push r2
 		push r3
 		push r4
@@ -380,6 +408,13 @@ mvTopology:
 		
 
 		endmvTopoplogy:
+
+		; r0, new positon
+		; r1, previous position still
+
+		call setIndexChanged
+
+		; marks what must be re-rendered
 	
 		pop r7
 		pop r6
@@ -398,47 +433,38 @@ render:
 	push r0
 	push r1
 	push r2
-
-
+	push r3
+	push r4
 
 
 	; Todo: Completely change this function, create a top layer map, and than a bootom layer one. Draw once at start, and just update the screen as needed.
+	
+	; Must be called in all positions that changed
+	
+	; currentScreenIndexesChanged stores all indexes that must be rewriten. 
+	; it will write them left to right, and when a \0 is met, it will stop. 
+	; has 1200 bytes alocated, but it will most likely never be used, but GUI can benefit from this large buffer
+	
+	
+	loadn r3, #'\0'
 
+	loadn r0, #currentScreenIndexesChanged
+	ScreenRenderIndex_Loop:
 
+		loadi r4, r0          	   ; Carrega no r4 o caractere apontado por r0
+		cmp r4, r3            	   ; Compara o caractere atual com '\0'
+		jeq ScreenRenderIndexExit    ; Se for igual a '\0', salta para ScreenRenderIndexExit, encerrando a impressão.
 
-	;render stage
-
-	;render props
-
-	load r2, prevposBox
-	load r0, posBox
 		
-	loadn r1, '@'
-	loadn r2, #768
-	add r1, r1,r2 
-	outchar r1, r0
-	
-	renderCleanBoxSkip:
-
-	;Render Player
-
-	load r2, prevposPlayer
-	load r0, posPlayer
-	
-	cmp r0, r2
-	jeq renderSkipPrevPosClear	
-
-	loadn r1, ' '
-	outchar r1, r2
-	renderSkipPrevPosClear:
+		; Takes r1 as the position to render
+		; Takes currentPrintingColor as a color variable
+		call ScreenRenderIndex
 		
-	loadn r1, 'A'
-	loadn r2, #768
-	add r1, r1,r2 
-	outchar r1, r0
-	
-	renderCleanPlayerSkip:
 
+		inc r0
+		jmp ScreenRenderIndex_Loop
+
+	ScreenRenderIndexExit:
 
 	; todo create a help menu that shows the topology of the stage
 
@@ -448,6 +474,8 @@ render:
 	
 	;Epilogue
 	
+	pop r4
+	pop r3
 	pop r2
 	pop r1
 	pop r0
@@ -571,3 +599,42 @@ ScreenRenderIndex:
 	pop r2
 	pop r0
 	rts
+
+setIndexChanged:
+
+	; Takes r0 and r1 as inputs. This way it can be pluged directly into the movement logic
+	; does not modify them, has no output to be handled
+
+
+	push r2
+	push r3
+	push r4
+
+	loadn r2, #currentScreenIndexesChanged ; Addres to first character of string
+	load r3, currentScreenIndexesChangedIndex
+
+	 r2 + r3, points to the last changed index
+	add r4, r3, r2
+
+	storei r4, r0
+	inc r4
+	inc r3
+	
+	storei r4, r1
+	inc r4
+	inc r3
+	
+	loadn r2, "\0"
+	storei r4, r2
+
+	store currentScreenIndexesChangedIndex, r3
+
+	; can be optimized by making currentScreenIndexesChangedIndex point directly to "\0" so no need to have r4 and inc it
+
+
+	pop r4
+	pop r3
+	pop r2
+
+
+
