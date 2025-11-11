@@ -4,6 +4,7 @@ posPlayer: var#1
 prevposPlayer: var#1
 originalposPlayer: var#1
 playerMoveDirection: var#1
+playerOrientation: var#1
 
 posBox: var#1
 prevposBox: var#1
@@ -33,9 +34,7 @@ main:
 	loadn r0, #156
 	store posBox, r0
 
-	
 	mainLoop:
-	
 	
 	;Movement
 	call movePlayer
@@ -66,7 +65,6 @@ movePlayer:
 	; r1 prevposPlayer
 	; r2 localHelper
 	; r3 inchar
-
 
 	;if a
 		loadn r2, 'a' 
@@ -138,11 +136,11 @@ movePlayer:
 	pop r2
 	pop r1
 	pop r0
+
 	RTS
 
 checkPushMovement:
 	
-
 	push r0
 	push r1
 	push r2
