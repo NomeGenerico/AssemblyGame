@@ -19,6 +19,9 @@ What is Done already:
 - Pushing Multiple Boxes Over Topological bounderies
 - Torus Topology - Pacman like
 
+Intermediary ToDo's:
+
+  - Run Lenght Econder/Decoder for layers and big strings
 
 Big ToDo's: 
 
@@ -35,7 +38,6 @@ ToDo's If there is enought time:
 - Extensible Object System with pointers to Behaviour functions
 - Dynamic Backgrounds
 - Animations
-- 
 
 
 
