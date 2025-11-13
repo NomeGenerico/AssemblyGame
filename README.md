@@ -1,8 +1,8 @@
-This is a game developed in assembly for the computer desingned by ICMC-USP. It is a simple Von Neumann computer implementing a RISC instruction set that includes arythimatic, logical, stack, IO, conditional, call, jump, etc. 
+This is a game developed in assembly for the computer desingned by ICMC-USP. It is a simple Von Neumann computer implementing a RISC instruction set that includes arithimatic, logical, stack, IO, conditional, call, jump, etc. 
 
 More info can be found can be found [here](https://github.com/simoesusp/Processador-ICMC/tree/master)
 
-This game is a sokoban, a type of puzzle game which you solve chalendges by primarely pushing objects around.
+This game is a sokoban, a type of puzzle game which you solve chalendges primarely by pushing objects around.
 
 The twist of this game will be the exploration of the topologies of diferent 2d manifolds, in which the puzles will reside. 
 
@@ -16,6 +16,7 @@ What is Done already:
 - Easy way to load new levels via the CurentLayer Pointers
 - Pushing Boxes
 - Pushing Multiple Boxes
+- Pushing Multiple Boxes Over Topological bounderies
 - Torus Topology - Pacman like
 
 
@@ -25,7 +26,16 @@ Big ToDo's:
 - Other Objects like walls, buttons, doors, etc...
 - Making topology variable and configurable. Curently Stuck on a toroidal surface
 - Undo Function
+- Non Orientable Surfaces
+- Non traditional 2d manifolds
 - Puzzles
+
+ToDo's If there is enought time:
+
+- Extensible Object System with pointers to Behaviour functions
+- Dynamic Backgrounds
+- Animations
+- 
 
 
 
