@@ -21,11 +21,13 @@ curentTopology: var#1
 
 ; Render Data
 currentScreenIndexesChanged : var#1200
-currentScreenIndexesChangedIndex: var#0
+currentScreenIndexesChangedIndex: var#1
 
 ; UI Data 
 UIStack : var#20 ; max of 20 ui elements
 UIStackPointer: var#1
+UICurentlySelectedElement: var#3 ;<ID, StartPos, EndPos>
+UIPreviousSelectedElement: var#3 ;<ID, StartPos, EndPos>
 
 ; ColorData
 uiLayerColor: var#1 
@@ -35,9 +37,10 @@ currentPrintingColor: var#1
 
 LayerProps : string "                                                                                                                                                                                                                                                                                                                                                                                       @@@@@@@                                 @     @                                 @     @                                 @     @                                 @     @                                 @     @                                 @@@@@@@                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  "
 LayerBackground : string "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                "
-   
+LayerUI : var#1200
+LayerBehavior: var#1200
 
-
+InputedChar: var#1
 
 main:
 
@@ -56,8 +59,14 @@ main:
 				loadn r0, #LayerBackground
     			store currentBackgroundLayer, r0
 
+				loadn r0, #LayerBehavior
+    			store currentBehaviourLayer, r0
 
-			loadn r2, Level1
+				loadn r0, #LayerUI
+    			store currentUILayer, r0
+			
+
+			loadn r2, #Level1
 			call LoadStage
 
 		; positions player in level
@@ -69,7 +78,7 @@ main:
 			store playerPos, r0
 	
 			add r2, r1, r0
-			loadn r0, "A"
+			loadn r0, #'A'
 
 			storei r2, r0
 
@@ -80,16 +89,33 @@ main:
 
 
 	mainLoop:
+
+		; Input
+		call InputHandler
 	
-		;Movement
-			call movePlayer  ; must make movePlayer call checkPushMove
-						     ; To alow current code to work
+		;GameUpdate
 
+			call movePlayer  ;TODO: put checkPushMovement in a BehaviourLayer; and check if UI is active or not. 
+			; Behavior ; TODO
+			
+		; call UIHandler ; Checks if ui is active
+
+						     
 		;RenderLoop:
-			call render
-
+			call render   ; makes it skip zeros in the UI Buffer, instead of the spaces
 
 	jmp mainLoop
+
+
+InputHandler:
+
+	push r0
+
+	inchar r0
+	store InputedChar, r0
+
+	pop r0
+	rts
 
 movePlayer:
 	
@@ -103,30 +129,31 @@ movePlayer:
 	store playerOriginalPos, r0
 	mov r1, r0
 	store playerPrevPos, r1
-	inchar r3
+
+	load r3, InputedChar
 
 	; r0 playerPos
 	; r1 playerPrevPos
-	s r2 localHelper
-	; r3 inchar
+	; r2 localHelper
+	; r3 InputedChar
 
 	;if a
-		loadn r2, 'a' 
+		loadn r2, #'a' 
 		cmp r3, r2
 		jeq PlayerMvLeft
 	
 	;if d
-		loadn r2, 'd' 
+		loadn r2, #'d' 
 		cmp r3, r2
 		jeq PlayerMvRight
 
 	;if w
-		loadn r2, 'w' 
+		loadn r2, #'w' 
 		cmp r3, r2
 		jeq PlayerMvUp
 
 	;if s
-		loadn r2, 's' 
+		loadn r2, #'s' 
 		cmp r3, r2
 		jeq PlayerMvDown
 
@@ -197,7 +224,7 @@ movePlayer:
 	pop r1
 	pop r0
 
-	RTS
+	rts
 
 MoveInMemory:
 
@@ -219,7 +246,7 @@ MoveInMemory:
 	; r4
 	loadi r4, r3 ; character in r1 of Layer
 	
-	loadn r5, # " "
+	loadn r5, #' '
 	storei r3, r5     ; overide r1 with " "
 	
 	add r3, r0, r2 
@@ -258,7 +285,7 @@ checkPushMovement:
 	add r2, r6, r0 ; memory addres of r0 position in propLayer
 
 	loadi r4, r2
-	loadn r3, "@"
+	loadn r3, #'@'
 	cmp r4, r3
 
 	jne endboxmv
@@ -667,7 +694,7 @@ ScreenRenderIndex:
 		loadi r2, r0  ;returns on r2 the value in the string
 
 	; if r2, the value of the string in index r1, is not = " ":
-	loadn r3, " "
+	loadn r3, #' '
 	cmp r2, r3
 	jeq printsecondlayer
 
@@ -818,7 +845,7 @@ LoadStage:
 	call RLEDecoder
 	inc r2
 
-	Load r0, currentBehaviourLayer
+	load r0, currentBehaviourLayer
 	loadi r1, r2
 
 	call RLEDecoder
@@ -842,17 +869,18 @@ UICall:
 			; r1 as the start position of where it will Draw
 			; r2 is the elements color. 
 
-			
+
 
 
 			; r0 will be the start of the draw position	
 			; r1 will be the end of the draw position
 			; r2 will be the outupt   ; exemple, confirmation prompt returns either a 1 or a 0
+	rts
 
 UIRedraw: 
 			; Travels the stack and reconstruncting the current UI Layer, Must be able to determine the size and all positions that must be redraw
 			; takes r0 and r1, as start and end position of the ui element. assumes a retengular element
-
+	rts
 
 UIDrawToBuffer:    
 					
@@ -864,7 +892,6 @@ UIDrawToBuffer:
 	push r2
 	push r3
 	push r4
-	; r0 is the string it will decode to. Pointer
 	; r1 is the string it will decode
 
 	load r0, currentUILayer
@@ -890,25 +917,24 @@ UIDrawToBuffer:
 				jeq UI_Draw_SkipUIOveride
 
 				storei r0,r4
-				inc r0	
 
 				UI_Draw_SkipUIOveride:
+				inc r0	
 
 				jmp UIDrawToBufferDecode_Loop
 
-			UIDrawToBuffer_Exit:
 			inc r1 
 		jmp UIDrawToBuffer_Loop    ; Volta ao início do loop para continuar imprimindo.
 
+	UIDrawToBufferDecode_Exit:
 
-   UIDrawToBuffer_Exit:	
+    UIDrawToBuffer_Exit:	
 	pop r4	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
 	pop r3
 	pop r2
 	pop r1
 	pop r0
 	rts			
-
 
 ;____________________________________
 	; UI Data
@@ -917,30 +943,205 @@ UIDrawToBuffer:
 
 UIConfirmationPrompt: var#4
 
-	;function 
-	
 	UIConfirmationPromptFunction:
 
-	push r0
-	push r1 ; where to "print", actualy we are puting it into the uiLayer
-	push r2 ; color
+		push r0
+		push r1 ; where to "print", actualy we are puting it into the uiLayer
+		push r2 ; color
+		push r3
 
-	load currentPrintingColor, r2
+		; first drawing of the element
+			store currentPrintingColor, r2
+
+			; protect Ui position on screen 
+			mov r2, r1
+
+			loadn r1, #ConfirmationRLE ; pointer to the element
+			call UIDrawToBuffer; 
+
+			mov r1, r2
+
+		; Now the UI element will enter its control loop
+
+		UIConfirmationPromptFunction_Loop:
+
+			; handle the input given and executes logic
+
+			; Mark active options, in a first moment, only one single element should be active. 
+			; this element, will be drawn again in the render pass with a diferent color.
+			; might have to make this part of the render system, with a list of tuples of the elements, first element start, end, secondend element start, end...
+
+			load r0, InputedChar
+
+			;if a
+				loadn r1, #'a'  
+				cmp r0, r1
+				jeq UIConfirmationPromptFunction_Ifa
+
+			;if d
+				loadn r1, #'d'  
+				cmp r0, r1
+				jeq UIConfirmationPromptFunction_Ifd
+
+			;if esc:
+				loadn r1, #27 ; ESC
+				cmp r0, r1
+				jeq UIConfirmationPrompt_Exit
+
+			UIConfirmationPromptFunction_Ifa:
+
+				loadn r0, #65534 ; -1
+				jmp UIConfirmationPromptFunction_ResolveActive
+
+			UIConfirmationPromptFunction_Ifd:
+			
+				loadn r0, #1
+				jmp UIConfirmationPromptFunction_ResolveActive
+
+			UIConfirmationPromptFunction_ResolveActive:
+			;loadn r0, shift
+ 		   load r1, UICurentlySelectedElement ; Always set this to zero when closing the UI
+			loadn r2, #2 ; number of elements
+
+			push r0
+			push r1
+			push r2
+			store UIPreviousSelectedElement, r1
+			; add data to currentScreenIndexesChanged
+
+				loadn r2, #UICurentlySelectedElement
+				loadn r1, #UIPreviousSelectedElement
+
+				loadi r0, r2 
+				storei r1, r0 ;id
+				inc r1 
+				inc r2
+				loadi r0, r2 
+				storei r1, r0 ;start
+				inc r1
+				inc r2 
+				loadi r0, r2 
+				storei r1, r0 ;end
+			pop r2
+			pop r1
+			pop r0
 
 
 
+			add r1, r1, r0
+			mod r1, r1, r2
+
+			store UICurentlySelectedElement, r1
+			
+
+			; MarkingElement
+			;if UICurentlySelectedElement = 0
+				; "No"
+				loadn r2, #0
+				cmp r1, r2
+				jne UIConfirmationPromptFunction_UICurentlySelectedElementEQ1
+
+				loadn r1, #43 ; position of the N of the No
+				loadn r2, #44 ; position of the o of the No	
+
+				jmp UIConfirmationPromptFunction_MarkActive
+			
+
+			UIConfirmationPromptFunction_UICurentlySelectedElementEQ1:
+				;Yes
+
+				loadn r1, #47 ; position of the Y of the Yes
+				loadn r2, #49 ; position of the s of the Yes
 
 
-	pop r2
-	pop r1
-	pop r0
+			UIConfirmationPromptFunction_MarkActive:
+			;load r0, Ui element position
+			
+			loadn r0, #UIConfirmationPrompt
+			inc r0
+			loadi r0, r0
 
-	
+			;Redraw Elements with new color:
+
+			add r1, r1, r0
+			add r2, r2, r0
+
+			loadn r0, #UICurentlySelectedElement
+			inc r0 
+			storei r0, r1 ; Update start
+			inc r0 
+			storei r0, r2 ; Update end
+
+
+			jmp UIConfirmationPromptFunction_Loop
+
+		UIConfirmationPrompt_Exit:
+
+		;reset 
+			loadn r0, #0
+			loadn r1, #UICurentlySelectedElement
+			storei r1, r0 ; reset id
+			inc r1 
+			storei r1, r0 ; reset start
+			inc r1 
+			storei r1, r0 ; reset end
+
+		; Pop UIElement From Stack
+
+		; TODO
+
+		pop r3
+		pop r2
+		pop r1
+		pop r0
+		rts
+
+	ConfirmationRLE : var#39  ; 19 runs, 39 words total
+
+		static ConfirmationRLE + #0, #1      ; count
+		static ConfirmationRLE + #1, #42    ; '*' (ASCII 42)
+		static ConfirmationRLE + #2, #12      ; count
+		static ConfirmationRLE + #3, #45    ; '-' (ASCII 45)
+		static ConfirmationRLE + #4, #1      ; count
+		static ConfirmationRLE + #5, #42    ; '*' (ASCII 42)
+		static ConfirmationRLE + #6, #26      ; count
+		static ConfirmationRLE + #7, #32    ; ' ' (ASCII 32)
+		static ConfirmationRLE + #8, #1      ; count
+		static ConfirmationRLE + #9, #124    ; '|' (ASCII 124)
+		static ConfirmationRLE + #10, #2      ; count
+		static ConfirmationRLE + #11, #32    ; ' ' (ASCII 32)
+		static ConfirmationRLE + #12, #1      ; count
+		static ConfirmationRLE + #13, #78    ; 'N' (ASCII 78)
+		static ConfirmationRLE + #14, #1      ; count
+		static ConfirmationRLE + #15, #79    ; 'O' (ASCII 79)
+		static ConfirmationRLE + #16, #3      ; count
+		static ConfirmationRLE + #17, #32    ; ' ' (ASCII 32)
+		static ConfirmationRLE + #18, #1      ; count
+		static ConfirmationRLE + #19, #89    ; 'Y' (ASCII 89)
+		static ConfirmationRLE + #20, #1      ; count
+		static ConfirmationRLE + #21, #101    ; 'e' (ASCII 101)
+		static ConfirmationRLE + #22, #1      ; count
+		static ConfirmationRLE + #23, #115    ; 's' (ASCII 115)
+		static ConfirmationRLE + #24, #2      ; count
+		static ConfirmationRLE + #25, #32    ; ' ' (ASCII 32)
+		static ConfirmationRLE + #26, #1      ; count
+		static ConfirmationRLE + #27, #124    ; '|' (ASCII 124)
+		static ConfirmationRLE + #28, #26      ; count
+		static ConfirmationRLE + #29, #32    ; ' ' (ASCII 32)
+		static ConfirmationRLE + #30, #1      ; count
+		static ConfirmationRLE + #31, #42    ; '*' (ASCII 42)
+		static ConfirmationRLE + #32, #12      ; count
+		static ConfirmationRLE + #33, #45    ; '-' (ASCII 45)
+		static ConfirmationRLE + #34, #1      ; count
+		static ConfirmationRLE + #35, #42    ; '*' (ASCII 42)
+		static ConfirmationRLE + #36, #1106      ; count
+		static ConfirmationRLE + #37, #32    ; ' ' (ASCII 32)
+		static ConfirmationRLE + #38, #0      ; terminator
+		
 
 
 
-
-MainMenu
+;MainMenu
 
 	TitleRLE : var #193  ; 96 runs, 193 words total
 
@@ -1138,56 +1339,14 @@ MainMenu
 		static TitleRLE + #191, #32    ; ' ' (ASCII 32)
 		static TitleRLE + #192, #0      ; terminator	
 
-ConfirmationRLE : var #39  ; 19 runs, 39 words total
-
-	static ConfirmationRLE + #0, #1      ; count
-	static ConfirmationRLE + #1, #42    ; '*' (ASCII 42)
-	static ConfirmationRLE + #2, #12      ; count
-	static ConfirmationRLE + #3, #45    ; '-' (ASCII 45)
-	static ConfirmationRLE + #4, #1      ; count
-	static ConfirmationRLE + #5, #42    ; '*' (ASCII 42)
-	static ConfirmationRLE + #6, #26      ; count
-	static ConfirmationRLE + #7, #32    ; ' ' (ASCII 32)
-	static ConfirmationRLE + #8, #1      ; count
-	static ConfirmationRLE + #9, #124    ; '|' (ASCII 124)
-	static ConfirmationRLE + #10, #2      ; count
-	static ConfirmationRLE + #11, #32    ; ' ' (ASCII 32)
-	static ConfirmationRLE + #12, #1      ; count
-	static ConfirmationRLE + #13, #78    ; 'N' (ASCII 78)
-	static ConfirmationRLE + #14, #1      ; count
-	static ConfirmationRLE + #15, #79    ; 'O' (ASCII 79)
-	static ConfirmationRLE + #16, #3      ; count
-	static ConfirmationRLE + #17, #32    ; ' ' (ASCII 32)
-	static ConfirmationRLE + #18, #1      ; count
-	static ConfirmationRLE + #19, #89    ; 'Y' (ASCII 89)
-	static ConfirmationRLE + #20, #1      ; count
-	static ConfirmationRLE + #21, #101    ; 'e' (ASCII 101)
-	static ConfirmationRLE + #22, #1      ; count
-	static ConfirmationRLE + #23, #115    ; 's' (ASCII 115)
-	static ConfirmationRLE + #24, #2      ; count
-	static ConfirmationRLE + #25, #32    ; ' ' (ASCII 32)
-	static ConfirmationRLE + #26, #1      ; count
-	static ConfirmationRLE + #27, #124    ; '|' (ASCII 124)
-	static ConfirmationRLE + #28, #26      ; count
-	static ConfirmationRLE + #29, #32    ; ' ' (ASCII 32)
-	static ConfirmationRLE + #30, #1      ; count
-	static ConfirmationRLE + #31, #42    ; '*' (ASCII 42)
-	static ConfirmationRLE + #32, #12      ; count
-	static ConfirmationRLE + #33, #45    ; '-' (ASCII 45)
-	static ConfirmationRLE + #34, #1      ; count
-	static ConfirmationRLE + #35, #42    ; '*' (ASCII 42)
-	static ConfirmationRLE + #36, #1106      ; count
-	static ConfirmationRLE + #37, #32    ; ' ' (ASCII 32)
-	static ConfirmationRLE + #38, #0      ; terminator
-
-; Level Data:
+; Level Data: Var#5  <HUD, Props, Background, Behavior, Topology>
 
 EmptyRLE: var#3
 	static EmptyRLE + #0, #1200; count
 	static EmptyRLE + #1, #32    ; ' ' (ASCII 32)
-	static EmptyRLE + #0, #0     ; terminator
+	static EmptyRLE + #2, #0     ; terminator
 
-Level1: var# 5
+Level1: var#5
 
 	static Level1 + #0, #EmptyRLE    ; UI
 	static Level1 + #1, #Level1PropsRLE
@@ -1197,7 +1356,7 @@ Level1: var# 5
 
 	; Original: 1200 words, RLE: 187 words, saved 84.4%
 	; RLE encoded level data
-	Level1PropsRLE : var #187  ; 93 runs, 187 words total
+	Level1PropsRLE : var#187  ; 93 runs, 187 words total
 
 		static Level1PropsRLE + #0, #28      ; count
 		static Level1PropsRLE + #1, #32    ; ' ' (ASCII 32)
